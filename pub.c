@@ -21,19 +21,23 @@ int main(int argc, const char** argv)
     signal(SIGINT, StopHandler);
     printf("Publishing message with OpenMAMA.\n");
 
+    mamaQueue publishQueue = NULL;
+    mamaDispatcher publishDispatcher = NULL;
+    
     mama_status status = mama_loadBridge(&bridge, "solace");
-    if ((status = mama_loadBridge(&bridge, "solace")) == MAMA_STATUS_OK)
+    if (((status = mama_loadBridge(&bridge, "solace")) == MAMA_STATUS_OK) &&
+        ((status = mama_open()) == MAMA_STATUS_OK) &&
+        ((status = mamaQueue_create(&publishQueue, bridge)) == MAMA_STATUS_OK) &&
+        ((status = mamaDispatcher_create(&publishDispatcher, publishQueue)) == MAMA_STATUS_OK))
     {
-        if ((status = mama_open()) == MAMA_STATUS_OK)
-        {
-            mama_start(bridge);
-
-            // here
-
-            printf("Closing OpenMAMA.\n");
-            mama_close();
-            exit(0);
-        }
+        // NOTICE active thread block on the following call
+        mama_start(bridge);
+        // NOTICE active thread resumes here after mama_stop() call
+        printf("Closing OpenMAMA.\n");
+        mamaDispatcher_destroy(publishDispatcher);
+        mamaQueue_destroy(publishQueue);
+        mama_close();
+        exit(0);
     }
     printf("OpenMAMA error: %s\n", mamaStatus_stringForStatus(status));
     exit(status);
