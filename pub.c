@@ -23,12 +23,15 @@ int main(int argc, const char** argv)
 
     mamaQueue publishQueue = NULL;
     mamaDispatcher publishDispatcher = NULL;
+    mamaTransport transport = NULL;
     
-    mama_status status = mama_loadBridge(&bridge, "solace");
+    mama_status status;
     if (((status = mama_loadBridge(&bridge, "solace")) == MAMA_STATUS_OK) &&
         ((status = mama_open()) == MAMA_STATUS_OK) &&
         ((status = mamaQueue_create(&publishQueue, bridge)) == MAMA_STATUS_OK) &&
-        ((status = mamaDispatcher_create(&publishDispatcher, publishQueue)) == MAMA_STATUS_OK))
+        ((status = mamaDispatcher_create(&publishDispatcher, publishQueue)) == MAMA_STATUS_OK) &&
+        ((status = mamaTransport_allocate(&transport)) == MAMA_STATUS_OK) &&
+        ((status = mamaTransport_create(transport, "pub", bridge)) == MAMA_STATUS_OK))
     {
         // NOTICE active thread block on the following call
         mama_start(bridge);
