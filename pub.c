@@ -1,5 +1,18 @@
+/*
+ * Copyright 2014-2016 Solace Systems, Inc. All rights reserved.
+ *
+ * http://www.solacesystems.com
+ *
+ * This source is distributed under the terms and conditions
+ * of any contract or contracts between Solace and you or
+ * your company. If there are no contracts in place use of
+ * this source is not authorized. No support is provided and
+ * no distribution, sharing with others or re-use of this
+ * source is authorized unless specifically stated in the
+ * contracts referred to above.
+ */
+
 #include <stdio.h>
-#include <signal.h>
 #include <mama/mama.h>
 
 int main(int argc, const char** argv)
