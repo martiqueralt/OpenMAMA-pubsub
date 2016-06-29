@@ -29,17 +29,14 @@ int main(int argc, const char** argv)
     if (((status = mama_loadBridge(&bridge, "solace")) == MAMA_STATUS_OK) &&
         ((status = mama_openWithProperties(".","mama.properties")) == MAMA_STATUS_OK))
     {
-        // create publisher queue, dispatcher, transport and the publisher
-        mamaQueue publishQueue = NULL;
-        mamaDispatcher publishDispatcher = NULL;
+        // create transport and publisher
         mamaTransport transport = NULL;
         mamaPublisher publisher = NULL;
-        if (((status = mamaQueue_create(&publishQueue, bridge)) == MAMA_STATUS_OK) &&
-            ((status = mamaDispatcher_create(&publishDispatcher, publishQueue)) == MAMA_STATUS_OK) &&
-            ((status = mamaTransport_allocate(&transport)) == MAMA_STATUS_OK) &&
+        if (((status = mamaTransport_allocate(&transport)) == MAMA_STATUS_OK) &&
             ((status = mamaTransport_create(transport, "pub", bridge)) == MAMA_STATUS_OK) &&
-            ((status = mamaPublisher_create(&publisher, transport, "tutorial/topic", NULL, NULL)) == MAMA_STATUS_OK))
+            ((status = mamaPublisher_create(&publisher, transport, "tutorial.topic", NULL, NULL)) == MAMA_STATUS_OK))
         {
+            // create message and add some fields to it
             mamaMsg message = NULL;
             if (((status = mamaMsg_create(&message)) == MAMA_STATUS_OK) &&
                 ((status = mamaMsg_addI32(message, MamaFieldMsgType.mName, MamaFieldMsgType.mFid, 
@@ -49,21 +46,16 @@ int main(int argc, const char** argv)
                 ((status = mamaMsg_addString(message, "MdMyField", 99, 
                                              "string value")) == MAMA_STATUS_OK))
             {
-        
-                status = mamaPublisher_send (publisher, message);
-                printf("OpenMAMA error: %s\n", mamaStatus_stringForStatus(status));
-
-                // NOTICE active thread block on the following call
-                // mama_start(bridge);
-                // NOTICE active thread resumes here after mama_stop() call
-                printf("Closing OpenMAMA.\n");
-                mamaPublisher_destroy(publisher);
-                mamaTransport_destroy(transport);
-                mamaDispatcher_destroy(publishDispatcher);
-                mamaQueue_destroy(publishQueue);
-                mama_close();
-                // normal exit
-                exit(0);
+                // publish the message
+                if ((status = mamaPublisher_send (publisher, message)) == MAMA_STATUS_OK)
+                {
+                    printf("Message published, closing OpenMAMA.\n");
+                    mamaPublisher_destroy(publisher);
+                    mamaTransport_destroy(transport);
+                    mama_close();
+                    // normal exit
+                    exit(0);
+                }
             }
         }
     }
