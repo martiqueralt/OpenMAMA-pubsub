@@ -3,6 +3,7 @@
 #include <mama/mama.h>
 
 mamaBridge bridge = NULL;
+mamaPublisher publisher = NULL;
 
 void StopHandler(int value)
 {
@@ -10,9 +11,14 @@ void StopHandler(int value)
     printf(" Do you want to stop OpenMAMA? [y/n]: ");
     char answer = getchar();
     if (answer == 'y')
+    {
+        mamaPublisher_destroy(publisher);
         mama_stop(bridge);
+    }
     else
+    {
         signal(SIGINT, StopHandler);
+    }
     getchar();
 }
 
@@ -31,7 +37,8 @@ int main(int argc, const char** argv)
         ((status = mamaQueue_create(&publishQueue, bridge)) == MAMA_STATUS_OK) &&
         ((status = mamaDispatcher_create(&publishDispatcher, publishQueue)) == MAMA_STATUS_OK) &&
         ((status = mamaTransport_allocate(&transport)) == MAMA_STATUS_OK) &&
-        ((status = mamaTransport_create(transport, "pub", bridge)) == MAMA_STATUS_OK))
+        ((status = mamaTransport_create(transport, "pub", bridge)) == MAMA_STATUS_OK) &&
+        ((status = mamaPublisher_create(&publisher, transport, "topic", NULL, NULL)) == MAMA_STATUS_OK))
     {
         // NOTICE active thread block on the following call
         mama_start(bridge);
