@@ -2,23 +2,6 @@
 #include <signal.h>
 #include <mama/mama.h>
 
-
-void StopHandler(int value)
-{
-    signal(value, SIG_IGN);
-    printf(" Do you want to stop OpenMAMA? [y/n]: ");
-    char answer = getchar();
-    if (answer == 'y')
-    {
-        // mama_stop(bridge);
-    }
-    else
-    {
-        signal(SIGINT, StopHandler);
-    }
-    getchar();
-}
-
 int main(int argc, const char** argv)
 {
     printf("Publishing message with OpenMAMA.\n");
