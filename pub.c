@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 Solace Systems, Inc. All rights reserved.
+ * Copyright 2016 Solace Systems, Inc. All rights reserved.
  *
  * http://www.solacesystems.com
  *
@@ -17,7 +17,7 @@
 
 int main(int argc, const char** argv)
 {
-    printf("Publishing message with OpenMAMA.\n");
+    printf("Solace OpenMAMA tutorial.\nPublishing messages with OpenMAMA.\n");
     
     mama_status status;
     mamaBridge bridge = NULL;
@@ -43,7 +43,7 @@ int main(int argc, const char** argv)
                                              "string value")) == MAMA_STATUS_OK))
             {
                 // publish the message
-                if ((status = mamaPublisher_send (publisher, message)) == MAMA_STATUS_OK)
+                if ((status = mamaPublisher_send(publisher, message)) == MAMA_STATUS_OK)
                 {
                     printf("Message published, closing OpenMAMA.\n");
                     mamaPublisher_destroy(publisher);
