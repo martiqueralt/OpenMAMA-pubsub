@@ -26,7 +26,7 @@
 #include <time.h> // for message timestamp
 
 
-// used in stopHandlder routine
+// used in stopHandler routine
 void stopAll();
 
 /*
@@ -70,7 +70,7 @@ int main(int argc, const char** argv)
     signal(SIGINT, stopHandler);
 
     initializeBridge("solace");
-    connectTransport("pub");
+    connectTransport("vmr"); // see mama.properties
     // publish one message to "tutorial/topic" every 3 seconds
     configurePublishing("tutorial.topic", 3);
 
@@ -81,7 +81,7 @@ int main(int argc, const char** argv)
         printf("OpenMAMA start error: %s\n",
                 mamaStatus_stringForStatus(status));
     }
-    
+    printf("Closing OpenMAMA\n"); 
     mama_close();
     exit(status);
 }
@@ -209,6 +209,7 @@ void timerCallback(mamaTimer timer, void* closure)
         if ((status = mamaPublisher_send(global.publisher, message)) == MAMA_STATUS_OK)
         {
             printf("Message published: %s", buffer);
+            mamaMsg_destroy(message);
             // normal exit
             return;
         }

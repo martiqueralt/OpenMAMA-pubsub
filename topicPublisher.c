@@ -36,7 +36,7 @@ int main(int argc, const char** argv)
         mamaTransport transport = NULL;
         mamaPublisher publisher = NULL;
         if (((status = mamaTransport_allocate(&transport)) == MAMA_STATUS_OK) &&
-            ((status = mamaTransport_create(transport, "pub", bridge)) == MAMA_STATUS_OK) &&
+            ((status = mamaTransport_create(transport, "vmr", bridge)) == MAMA_STATUS_OK) &&
             ((status = mamaPublisher_create(&publisher, transport, "tutorial.topic", NULL, NULL)) == MAMA_STATUS_OK))
         {
             // create message and add some fields to it
