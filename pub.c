@@ -12,12 +12,19 @@
  * contracts referred to above.
  */
 
+/*
+ * Solace messaging with OpenMAMA
+ * PublishSubscribe tutorial - Topic Publisher
+ * Demonstrates publishing one direct message to a topic
+ */
+
 #include <stdio.h>
 #include <mama/mama.h>
 
+
 int main(int argc, const char** argv)
 {
-    printf("Solace OpenMAMA tutorial.\nPublishing messages with OpenMAMA.\n");
+    printf("Solace OpenMAMA tutorial.\nPublishing one message with OpenMAMA.\n");
     
     mama_status status;
     mamaBridge bridge = NULL;

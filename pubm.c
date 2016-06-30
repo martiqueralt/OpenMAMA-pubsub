@@ -12,6 +12,13 @@
  * contracts referred to above.
  */
 
+/*
+ * Solace messaging with OpenMAMA
+ * PublishSubscribe tutorial - Topic Publisher
+ * Demonstrates publishing multiple direct messages to a topic
+ */
+
+
 #include <stdio.h>
 #include <signal.h>
 #include <mama/mama.h>
