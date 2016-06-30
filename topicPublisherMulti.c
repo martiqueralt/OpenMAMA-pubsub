@@ -213,5 +213,7 @@ void timerCallback(mamaTimer timer, void* closure)
             return;
         }
     }
+    // error exit
+    printf("Error publishing message: %s\n", mamaStatus_stringForStatus(status));
 }
 
