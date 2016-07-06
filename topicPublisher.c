@@ -15,54 +15,206 @@
 /*
  * Solace messaging with OpenMAMA
  * PublishSubscribe tutorial - Topic Publisher
- * Demonstrates publishing one direct message to a topic
+ * Demonstrates publishing multiple direct messages to a topic
  */
 
+
 #include <stdio.h>
+#include <signal.h>
 #include <mama/mama.h>
+
+#include <time.h> // for message timestamp
+
+
+// used in stopHandler routine
+void stopAll();
+
+/*
+ * This routine is invoked when Ctrl-C is pressed from the console
+ */
+void stopHandler(int value)
+{
+    signal(value, SIG_IGN);
+    printf(" Do you want to stop the program? [y/n]: ");
+    char answer = getchar();
+    if (answer == 'y')
+        stopAll();
+    else
+        signal(SIGINT, stopHandler);
+    getchar();
+}
+
+
+// used in main routune
+void initializeBridge(const char *);
+void connectTransport(const char *);
+void configurePublishing(const char *, double);
+
+
+// global pointers
+struct
+{
+    mamaBridge bridge;
+    mamaTransport transport;
+    mamaPublisher publisher;
+    mamaTimer publishTimer;
+}
+global;
 
 
 int main(int argc, const char** argv)
 {
-    printf("Solace OpenMAMA tutorial.\nPublishing one message with OpenMAMA.\n");
+    printf("Solace OpenMAMA tutorial.\nPublishing messages with OpenMAMA.\n");
     
+    // set Ctrl-C handler
+    signal(SIGINT, stopHandler);
+
+    initializeBridge("solace");
+    connectTransport("vmr"); // see mama.properties
+    // publish one message to "tutorial/topic" every 3 seconds
+    configurePublishing("tutorial.topic", 3);
+
+    // start publishing until Ctrl-C is pressed
     mama_status status;
-    mamaBridge bridge = NULL;
-    // load Solace bridge and initiate MAMA
-    if (((status = mama_loadBridge(&bridge, "solace")) == MAMA_STATUS_OK) &&
+    if ((status = mama_start(global.bridge)) != MAMA_STATUS_OK)
+    {
+        printf("OpenMAMA start error: %s\n",
+                mamaStatus_stringForStatus(status));
+    }
+    printf("Closing OpenMAMA\n"); 
+    mama_close();
+    exit(status);
+}
+
+
+/*
+ * Stop publisher, transport and MAMA
+ */
+void stopAll()
+{
+    // order is important
+    if (global.publishTimer)
+    {
+        mamaTimer_destroy(global.publishTimer);
+        global.publishTimer = NULL;
+    }
+    if (global.publisher)
+    {
+        mamaPublisher_destroy(global.publisher);
+        global.publisher = NULL;
+    }
+    mama_stop(global.bridge);
+    if (global.transport)
+    {
+        mamaTransport_destroy(global.transport);
+        global.transport = NULL;
+    }
+}
+
+
+/*
+ * Load and initialize specified middleware bridge, initialize MAMA
+ */
+void initializeBridge(const char * bridgeName)
+{
+    global.bridge = NULL;
+    mama_status status;
+    if (((status = mama_loadBridge(&global.bridge, bridgeName)) == MAMA_STATUS_OK) &&
         ((status = mama_openWithProperties(".","mama.properties")) == MAMA_STATUS_OK))
     {
-        // create transport and publisher
-        mamaTransport transport = NULL;
-        mamaPublisher publisher = NULL;
-        if (((status = mamaTransport_allocate(&transport)) == MAMA_STATUS_OK) &&
-            ((status = mamaTransport_create(transport, "vmr", bridge)) == MAMA_STATUS_OK) &&
-            ((status = mamaPublisher_create(&publisher, transport, "tutorial.topic", NULL, NULL)) == MAMA_STATUS_OK))
+        // normal exit;
+        return;
+    }
+    // error exit
+    mama_close();
+    printf("MAMA initialization error: %s\n", mamaStatus_stringForStatus(status));
+    exit(status);
+}
+
+
+/*
+ * Connect to specified transport using the previously loaded bridge
+ */
+void connectTransport(const char * transportName)
+{
+    global.transport = NULL;
+    mama_status status;
+    if (((status = mamaTransport_allocate(&global.transport)) == MAMA_STATUS_OK) &&
+        ((status = mamaTransport_create(global.transport, transportName, global.bridge)) == MAMA_STATUS_OK))
+    {
+        // normal exit
+        return;
+    }
+    // error exit
+    printf("Transport %s connect error: %s\n", transportName, mamaStatus_stringForStatus(status));
+    mama_close();
+    exit(status);
+}
+
+
+// this callback will be called when timer expires
+void timerCallback(mamaTimer, void*);
+
+/*
+ * Configure publishing of messages to the specified topic with specified interval
+ */
+void configurePublishing(const char * publishTopicName, double intervalSeconds)
+{
+    global.publisher = NULL;
+    mama_status status;
+    if ((status = mamaPublisher_create(&global.publisher, global.transport,
+                    publishTopicName, NULL, NULL)) == MAMA_STATUS_OK)
+    {
+        // create a timer for publishing of messages
+        global.publishTimer = NULL;
+        mamaQueue defaultQueue;
+        if (((status = mama_getDefaultEventQueue(global.bridge, &defaultQueue)) == MAMA_STATUS_OK) &&
+            ((status = mamaTimer_create(&global.publishTimer, defaultQueue,
+                                        timerCallback,
+                                        intervalSeconds, 
+                                        NULL)) == MAMA_STATUS_OK))
         {
-            // create message and add some fields to it
-            mamaMsg message = NULL;
-            if (((status = mamaMsg_create(&message)) == MAMA_STATUS_OK) &&
-                ((status = mamaMsg_addI32(message, MamaFieldMsgType.mName, MamaFieldMsgType.mFid, 
-                                          MAMA_MSG_TYPE_INITIAL)) == MAMA_STATUS_OK) &&
-                ((status = mamaMsg_addI32(message, MamaFieldMsgStatus.mName, MamaFieldMsgStatus.mFid,
-                                          MAMA_MSG_STATUS_OK)) == MAMA_STATUS_OK) &&
-                ((status = mamaMsg_addString(message, "MdMyField", 99, 
-                                             "string value")) == MAMA_STATUS_OK))
-            {
-                // publish the message
-                if ((status = mamaPublisher_send(publisher, message)) == MAMA_STATUS_OK)
-                {
-                    printf("Message published, closing OpenMAMA.\n");
-                    mamaPublisher_destroy(publisher);
-                    mamaTransport_destroy(transport);
-                    mama_close();
-                    // normal exit
-                    exit(0);
-                }
-            }
+            // normal exit
+            return;
         }
     }
-    printf("OpenMAMA error: %s\n", mamaStatus_stringForStatus(status));
+    // error exit
+    printf("Error configuring publisher for topic %s, error code: %s\n", publishTopicName,
+            mamaStatus_stringForStatus(status));
+    mama_close();
     exit(status);
+}
+
+
+/*
+ * When timer expires, create a message and publish it
+ */
+void timerCallback(mamaTimer timer, void* closure)
+{
+    // generate a timestamp as one of the message fields
+    char buffer[32];
+    time_t currTime = time(NULL);
+    sprintf(buffer, "%s", asctime(localtime(&currTime)));
+    // create message and add 3 fields to it
+    mamaMsg message = NULL;
+    mama_status status;
+    if (((status = mamaMsg_create(&message)) == MAMA_STATUS_OK) &&
+        ((status = mamaMsg_addI32(message, MamaFieldMsgType.mName, MamaFieldMsgType.mFid,
+                                  MAMA_MSG_TYPE_INITIAL)) == MAMA_STATUS_OK) &&
+        ((status = mamaMsg_addI32(message, MamaFieldMsgStatus.mName, MamaFieldMsgStatus.mFid,
+                                  MAMA_MSG_STATUS_OK)) == MAMA_STATUS_OK) &&
+        ((status = mamaMsg_addString(message, "MdMyTimestamp", 99,
+                                     buffer)) == MAMA_STATUS_OK))
+    {
+        if ((status = mamaPublisher_send(global.publisher, message)) == MAMA_STATUS_OK)
+        {
+            printf("Message published: %s", buffer);
+            mamaMsg_destroy(message);
+            // normal exit
+            return;
+        }
+    }
+    // error exit
+    printf("Error publishing message: %s\n", mamaStatus_stringForStatus(status));
 }
 
