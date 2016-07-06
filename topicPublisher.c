@@ -81,6 +81,7 @@ int main(int argc, const char** argv)
         printf("OpenMAMA start error: %s\n",
                 mamaStatus_stringForStatus(status));
     }
+    // normal exit after Ctrl-C was pressed
     printf("Closing OpenMAMA\n"); 
     mama_close();
     exit(status);
@@ -187,7 +188,7 @@ void configurePublishing(const char * publishTopicName, double intervalSeconds)
 
 
 /*
- * When timer expires, create a message and publish it
+ * This routine is called when timer expires, it creates a message and publishes it
  */
 void timerCallback(mamaTimer timer, void* closure)
 {
@@ -195,7 +196,7 @@ void timerCallback(mamaTimer timer, void* closure)
     char buffer[32];
     time_t currTime = time(NULL);
     sprintf(buffer, "%s", asctime(localtime(&currTime)));
-    // create message and add 3 fields to it
+    // create message and add three fields to it
     mamaMsg message = NULL;
     mama_status status;
     if (((status = mamaMsg_create(&message)) == MAMA_STATUS_OK) &&

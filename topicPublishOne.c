@@ -28,7 +28,7 @@ int main(int argc, const char** argv)
     
     mama_status status;
     mamaBridge bridge = NULL;
-    // load Solace bridge and initiate MAMA
+    // load Solace bridge and initialize MAMA
     if (((status = mama_loadBridge(&bridge, "solace")) == MAMA_STATUS_OK) &&
         ((status = mama_openWithProperties(".","mama.properties")) == MAMA_STATUS_OK))
     {
@@ -39,7 +39,7 @@ int main(int argc, const char** argv)
             ((status = mamaTransport_create(transport, "vmr", bridge)) == MAMA_STATUS_OK) &&
             ((status = mamaPublisher_create(&publisher, transport, "tutorial.topic", NULL, NULL)) == MAMA_STATUS_OK))
         {
-            // create message and add some fields to it
+            // create message and add three fields to it
             mamaMsg message = NULL;
             if (((status = mamaMsg_create(&message)) == MAMA_STATUS_OK) &&
                 ((status = mamaMsg_addI32(message, MamaFieldMsgType.mName, MamaFieldMsgType.mFid, 

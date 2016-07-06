@@ -78,6 +78,7 @@ int main(int argc, const char** argv)
         printf("OpenMAMA start error: %s\n",
                 mamaStatus_stringForStatus(status));
     }
+    // normal exit when Ctrl-C was pressed
     printf("Closing OpenMAMA\n");    
     mama_close();
     exit(status);
